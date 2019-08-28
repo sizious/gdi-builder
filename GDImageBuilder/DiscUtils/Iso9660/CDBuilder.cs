@@ -212,6 +212,36 @@ namespace GDImageBuilder.DiscUtils.Iso9660
         }
 
         /// <summary>
+        /// Adds a directory to the ISO image.
+        /// </summary>
+        /// <param name="name">The name of the directory on the ISO image.</param>
+        /// <param name="sourcePath">The name of the directory on disk.</param>
+        /// <returns>The object representing this directory.</returns>
+        /// <remarks>
+        /// The name is the full path to the directory, for example:
+        /// <example><code>
+        ///   builder.AddDirectory(@"DIR1", @"C:\temp\tempdir1");
+        /// </code></example>
+        /// <para>The directory must exist on disk. The original CreationDate of 
+        /// the directory is saved in the ISO image.</para>
+        /// </remarks>
+        public BuildDirectoryInfo AddDirectory(string name, string sourcePath)
+        {
+            string[] nameElements = name.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+
+            DirectoryInfo di = new DirectoryInfo(sourcePath);
+            if (di == null || !di.Exists)
+            {
+                throw new DirectoryNotFoundException("Directory not found");
+            }
+
+            BuildDirectoryInfo result = GetDirectory(nameElements, nameElements.Length, true);
+            result.CreationTime = di.LastWriteTimeUtc;
+
+            return result;
+        }
+
+        /// <summary>
         /// Adds a byte array to the ISO image as a file.
         /// </summary>
         /// <param name="name">The name of the file on the ISO image.</param>

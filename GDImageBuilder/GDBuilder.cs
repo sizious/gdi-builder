@@ -130,7 +130,7 @@ namespace GDImageBuilder
             int skip = 0;
             int currentLBA = isSingleDensityArea ? SINGLE_DENSITY_AREA_LBA_START : HIGH_DENSITY_AREA_LBA_START;
 
-            bool isMultiDataTrack = !isSingleDensityArea && HighDensityDataTrackSplitted;
+            bool isHighDensityAreaMultiDataTrack = !isSingleDensityArea && HighDensityDataTrackSplitted;
 
             string dataTrackFileFirstPath = isSingleDensityArea ? _singleDensityAreaDataTrackPath : _highDensityAreaDataTrackFirstPath; // for SDA/HDA
             string dataTrackFileLastPath = isSingleDensityArea ? string.Empty : _highDensityAreaDataTrackLastPath; // for HDA only
@@ -172,17 +172,9 @@ namespace GDImageBuilder
                 tracks[0].LBA = (uint)trackEnd + TRACK_GAP_SECTOR_COUNT;
             }
 
-            if (isMultiDataTrack)
+            if (isHighDensityAreaMultiDataTrack)
             {
-                // There is a 150 sector gap before and after the GDDA
-                trackEnd = (int)(firstFileStart - TRACK_GAP_SECTOR_COUNT);
-                for (int i = tracks.Count - 1; i >= 0; i--)
-                {
-                    trackEnd -= (int)(GDImageUtility.RoundUp(tracks[i].FileSize, RAW_SECTOR_SIZE) / RAW_SECTOR_SIZE);
-                    //Track end is now the beginning of this track and the end of the previous
-                    tracks[i].LBA = (uint)(trackEnd + HIGH_DENSITY_AREA_LBA_START);
-                }
-                trackEnd -= TRACK_GAP_SECTOR_COUNT;
+                trackEnd = RecomputeAudioTracksLogicalBlockAddresses(tracks, HIGH_DENSITY_AREA_LBA_START, firstFileStart);
 
                 if (trackEnd < lastHeaderEnd)
                 {
@@ -197,7 +189,9 @@ namespace GDImageBuilder
             // Applied for SDA data track and HDA first data track            
             if (TruncateData)
             {
-                firstTrackFileSize = (lastHeaderEnd > TRACK_MINIMUM_SECTOR_COUNT ? lastHeaderEnd : TRACK_MINIMUM_SECTOR_COUNT) * DATA_SECTOR_SIZE;
+                long firstTrackSectorSize = (lastHeaderEnd > TRACK_MINIMUM_SECTOR_COUNT ? lastHeaderEnd : TRACK_MINIMUM_SECTOR_COUNT);
+                RecomputeAudioTracksLogicalBlockAddresses(tracks, (uint)currentLBA, firstTrackSectorSize);
+                firstTrackFileSize = firstTrackSectorSize * DATA_SECTOR_SIZE;
             }
             
             // Handle data track (SDA is track01, HDA is track03)
@@ -212,7 +206,7 @@ namespace GDImageBuilder
 
             // Handle last data track for HDA (if applicable)
             GDTrack lastTrack = null;
-            if (isMultiDataTrack)
+            if (isHighDensityAreaMultiDataTrack)
             {
                 lastTrack = new GDTrack
                 {
@@ -255,7 +249,7 @@ namespace GDImageBuilder
             }
 
             // Write last data track (if any)
-            if (isMultiDataTrack)
+            if (isHighDensityAreaMultiDataTrack)
             {
                 currentLBA = (int)lastTrack.LBA;
 
@@ -276,6 +270,22 @@ namespace GDImageBuilder
                     }
                 }
             }
+        }
+
+        private static int RecomputeAudioTracksLogicalBlockAddresses(List<GDTrack> tracks, uint startLba, long firstFileStart)
+        {
+            // There is a 150 sector gap before and after the GDDA
+            int trackEnd = (int)(firstFileStart - TRACK_GAP_SECTOR_COUNT);
+
+            for (int i = tracks.Count - 1; i >= 0; i--)
+            {
+                trackEnd -= (int)(GDImageUtility.RoundUp(tracks[i].FileSize, RAW_SECTOR_SIZE) / RAW_SECTOR_SIZE);
+                // Track end is now the beginning of this track and the end of the previous
+                tracks[i].LBA = (uint)(trackEnd + startLba);
+            }
+            trackEnd -= TRACK_GAP_SECTOR_COUNT;
+
+            return trackEnd;
         }
 
         private int NotifyProgress(long currentBytes, long totalBytes, int skip)
@@ -387,6 +397,8 @@ namespace GDImageBuilder
 
             foreach (DirectoryInfo dir in di.GetDirectories())
             {
+                string filePath = dir.FullName.Substring(basePath.Length);
+                builder.AddDirectory(filePath, dir.FullName); // this will save the original CreationDate of the dir in the ISO
                 PopulateFromDirectory(builder, dir, basePath, null, endLba);
             }
 

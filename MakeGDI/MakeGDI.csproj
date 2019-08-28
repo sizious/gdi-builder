@@ -8,8 +8,8 @@
     <ProjectGuid>{50639B74-0DA3-4BF3-AA79-AFF0B953B1C3}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GDIWrite</RootNamespace>
-    <AssemblyName>gdiwrite</AssemblyName>
+    <RootNamespace>MakeGDI</RootNamespace>
+    <AssemblyName>MakeGDI</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>

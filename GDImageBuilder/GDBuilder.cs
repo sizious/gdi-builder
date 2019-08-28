@@ -14,12 +14,13 @@ namespace GDImageBuilder
         #region Constants
 
         private const int TRACK_GAP_SECTOR_COUNT = 150;
+        private const int TRACK_MINIMUM_SECTOR_COUNT = 300;
 
         private const int DATA_SECTOR_SIZE = 2048;
         private const int RAW_SECTOR_SIZE = 2352;
 
         private const int SINGLE_DENSITY_AREA_LBA_START = 0;
-        private const int SINGLE_DENSITY_AREA_LBA_END = 33600;
+        private const int SINGLE_DENSITY_AREA_LBA_END = 33750;
 
         private const int HIGH_DENSITY_AREA_LBA_START = 45000;
         private const int HIGH_DENSITY_AREA_LBA_END = 549150;
@@ -154,6 +155,8 @@ namespace GDImageBuilder
 
             // HDA: Single track is filling all the available space by default, if only one data track in HDA (computed below if HDA has GDDA)            
             int trackEnd = HIGH_DENSITY_AREA_LBA_END - HIGH_DENSITY_AREA_LBA_START;
+
+            // SDA: Computing trackEnd for the data track
             if (isSingleDensityArea)
             {
                 // SDA: Single data track (track01) is filling the available space... after taken into account the SDA audio track
@@ -163,10 +166,10 @@ namespace GDImageBuilder
                 int singleDensityAreaAudioTrackSectorsSize = (int)(GDImageUtility.RoundUp(singleDensityAreaAudioTrackFileSize, RAW_SECTOR_SIZE) / RAW_SECTOR_SIZE);
 
                 // So the SDA data track will fill this space...
-                trackEnd = SINGLE_DENSITY_AREA_LBA_END - singleDensityAreaAudioTrackSectorsSize - (TRACK_GAP_SECTOR_COUNT * 2);
+                trackEnd = SINGLE_DENSITY_AREA_LBA_END - singleDensityAreaAudioTrackSectorsSize;
 
                 // Updating the SDA audio track in consequence
-                tracks[0].LBA = (uint)trackEnd;
+                tracks[0].LBA = (uint)trackEnd + TRACK_GAP_SECTOR_COUNT;
             }
 
             if (isMultiDataTrack)
@@ -189,17 +192,19 @@ namespace GDImageBuilder
                 // trackEnd: HDA when multi tracks: computed with GDDA
             }
 
-            // Applied for SDA data track and HDA first data track
+            long firstTrackFileSize = trackEnd * DATA_SECTOR_SIZE;
+
+            // Applied for SDA data track and HDA first data track            
             if (TruncateData)
             {
-                trackEnd = (int)lastHeaderEnd;
+                firstTrackFileSize = (lastHeaderEnd > TRACK_MINIMUM_SECTOR_COUNT ? lastHeaderEnd : TRACK_MINIMUM_SECTOR_COUNT) * DATA_SECTOR_SIZE;
             }
-
+            
             // Handle data track (SDA is track01, HDA is track03)
             GDTrack firstTrack = new GDTrack
             {
                 FileName = Path.GetFileName(dataTrackFileFirstPath),
-                FileSize = trackEnd * DATA_SECTOR_SIZE,
+                FileSize = firstTrackFileSize,
                 LBA = (uint)currentLBA,                                
                 Type = GDTrackType.Data
             };
@@ -226,14 +231,15 @@ namespace GDImageBuilder
             }
 
             // Initialize stream variables
-            byte[] buffer = RawMode ? new byte[DATA_SECTOR_SIZE] : new byte[32 * DATA_SECTOR_SIZE];
+            byte[] buffer = new byte[DATA_SECTOR_SIZE];
             int numRead = 0;
+            long bytesWritten = 0;
 
             // Write first (or single) data track
             using (FileStream destStream = new FileStream(dataTrackFileFirstPath, FileMode.Create, FileAccess.Write))
             {
                 // Write Bootsector data in the first sector
-                long bytesWritten = GDImageWriteHelper.WriteBootSector(RawMode, isoStream, destStream, buffer, ref currentLBA, ref currentBytes, bootstrapData);
+                bytesWritten = GDImageWriteHelper.WriteBootSector(RawMode, isoStream, destStream, buffer, ref currentLBA, ref currentBytes, bootstrapData);
 
                 numRead = isoStream.Read(buffer, 0, buffer.Length);
                 while (numRead != 0 && bytesWritten < firstTrack.FileSize)

@@ -4,7 +4,7 @@ using System.IO;
 
 using GDImageBuilder;
 
-namespace GDIWrite
+namespace MakeGDI
 {
     public class Program
     {
@@ -26,7 +26,7 @@ namespace GDIWrite
             List<string> cdda = new List<string>(); cdda.Add(@"C:\Temp\_out\track04.raw"); // GetMultiArgument("-cdda", args);
             string gdiPath = @"C:\Temp\_out\disc.gdi"; // GetSoloArgument("-gdi", args);
             string volume = GetSoloArgument("-V", args);
-            bool truncate = false; // HasArgument("-truncate", args);
+            bool truncate = true; // HasArgument("-truncate", args);
             bool fileOutput = false;
 
             if (!CheckArguments(data, ipBin, outPath, cdda, truncate, out fileOutput))

@@ -1,26 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
-using DiscUtils.Iso9660;
-using DiscUtils.Gdrom;
 using System.Threading;
+using GDImageBuilder;
 
 namespace GDIbuilder
 {
     public partial class GDIBuilderForm : Form
     {
-        private GDromBuilder _builder;
+        private GDBuilder _builder;
         private Thread _worker;
 
         public GDIBuilderForm()
         {
             InitializeComponent();
-            _builder = new GDromBuilder();
+            _builder = new GDBuilder();
         }
 
         private void btnSelectData_Click(object sender, EventArgs e)
@@ -109,24 +103,31 @@ namespace GDIbuilder
         {
             try
             {
-                List<DiscTrack> tracks = _builder.BuildGDROM(dataDir, ipBin, trackList, outdir);
+                _builder.HighDensityArea.SourceDataDirectory = dataDir;
+                _builder.HighDensityArea.BootstrapFilePath = ipBin;
+                _builder.HighDensityArea.AudioTrackFileNames.AddRange(trackList);
+                _builder.OutputDirectory = outdir;
+
+                _builder.BuildHighDensityArea();
+
                 Invoke(new Action(() =>
                 {
                     string gdiPath = System.IO.Path.Combine(outdir, "disc.gdi");
                     if (System.IO.File.Exists(gdiPath))
                     {
-                        _builder.UpdateGdiFile(tracks, gdiPath);
+                        _builder.WriteImageDescriptor(gdiPath, false);
                     }
-                    ResultDialog rd = new ResultDialog(_builder.GetGDIText(tracks));
-                    rd.ShowDialog();
-                    Close();
+                    MessageBox.Show("Done!", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+//                    ResultDialog rd = new ResultDialog(_builder.GetGDIText(tracks));
+//                    rd.ShowDialog();
+//                    Close();
                 }));
             }
             catch (Exception ex)
             {
                 Invoke(new Action(()=>{
                     MessageBox.Show("Failed to build disc.\n"+ex.Message,"Error",MessageBoxButtons.OK,MessageBoxIcon.Error);
-                    Close();
+//                    Close();
                 }));
             }
             _worker = null;
@@ -172,21 +173,21 @@ namespace GDIbuilder
         private void btnAdvanced_Click(object sender, EventArgs e)
         {
             AdvancedDialog adv = new AdvancedDialog();
-            adv.VolumeIdentifier = _builder.VolumeIdentifier;
-            adv.SystemIdentifier = _builder.SystemIdentifier;
-            adv.VolumeSetIdentifier = _builder.VolumeSetIdentifier;
-            adv.PublisherIdentifier = _builder.PublisherIdentifier;
-            adv.DataPreparerIdentifier = _builder.DataPreparerIdentifier;
-            adv.ApplicationIdentifier = _builder.ApplicationIdentifier;
+            adv.VolumeIdentifier = _builder.PrimaryVolumeDescriptor.VolumeIdentifier;
+            adv.SystemIdentifier = _builder.PrimaryVolumeDescriptor.SystemIdentifier;
+            adv.VolumeSetIdentifier = _builder.PrimaryVolumeDescriptor.VolumeSetIdentifier;
+            adv.PublisherIdentifier = _builder.PrimaryVolumeDescriptor.PublisherIdentifier;
+            adv.DataPreparerIdentifier = _builder.PrimaryVolumeDescriptor.DataPreparerIdentifier;
+            adv.ApplicationIdentifier = _builder.PrimaryVolumeDescriptor.ApplicationIdentifier;
             adv.TruncateMode = _builder.TruncateData;
             if (adv.ShowDialog() == DialogResult.OK)
             {
-                _builder.VolumeIdentifier = adv.VolumeIdentifier;
-                _builder.SystemIdentifier = adv.SystemIdentifier;
-                _builder.VolumeSetIdentifier = adv.VolumeSetIdentifier;
-                _builder.PublisherIdentifier = adv.PublisherIdentifier;
-                _builder.DataPreparerIdentifier = adv.DataPreparerIdentifier;
-                _builder.ApplicationIdentifier = adv.ApplicationIdentifier;
+                _builder.PrimaryVolumeDescriptor.VolumeIdentifier = adv.VolumeIdentifier;
+                _builder.PrimaryVolumeDescriptor.SystemIdentifier = adv.SystemIdentifier;
+                _builder.PrimaryVolumeDescriptor.VolumeSetIdentifier = adv.VolumeSetIdentifier;
+                _builder.PrimaryVolumeDescriptor.PublisherIdentifier = adv.PublisherIdentifier;
+                _builder.PrimaryVolumeDescriptor.DataPreparerIdentifier = adv.DataPreparerIdentifier;
+                _builder.PrimaryVolumeDescriptor.ApplicationIdentifier = adv.ApplicationIdentifier;
                 _builder.TruncateData = adv.TruncateMode;
             }
         }

@@ -55,6 +55,9 @@ namespace GDImageBuilder
                 bootstrapData[offset++] = (byte)((dcLBA >> 16) & 0xFF);
                 bootstrapData[offset] = dcType;
             }
+
+            // Update track count in bootsector (HDA + SDA tracks count)
+            bootstrapData[0x28E] = (byte)(tracks.Count + 2);
         }
     }
 }

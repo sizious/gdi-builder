@@ -111,9 +111,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="DiscUtils\DiscUtils.csproj">
+    <ProjectReference Include="..\GDImageBuilder\GDImageBuilder.csproj">
       <Project>{DBB340F9-2386-43C2-A473-FA496CBE07A4}</Project>
-      <Name>DiscUtils</Name>
+      <Name>GDImageBuilder</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -1,0 +1,310 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DBB340F9-2386-43C2-A473-FA496CBE07A4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GDImageBuilder</RootNamespace>
+    <AssemblyName>GDImageBuilder</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <StyleCopEnabled>false</StyleCopEnabled>
+    <AssemblyOriginatorKeyFile>..\DiscUtilsSigningKey.snk</AssemblyOriginatorKeyFile>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>GDImageBuilder.dll.xml</DocumentationFile>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>DiscUtilsCodeAnalysisRules.ruleset</CodeAnalysisRuleSet>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>GDImageBuilder.dll.xml</DocumentationFile>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'SignedRelease|AnyCPU'">
+    <OutputPath>bin\SignedRelease\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>GDImageBuilder.dll.xml</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <SignAssembly>true</SignAssembly>
+    <StyleCopEnabled>true</StyleCopEnabled>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <CodeAnalysisRuleSet>DiscUtilsCodeAnalysisRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release %28StyleCop%29|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>GDImageBuilder.dll.xml</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <StyleCopEnabled>true</StyleCopEnabled>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <SignAssembly>false</SignAssembly>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DiscUtils\AligningStream.cs" />
+    <Compile Include="DiscUtils\BigEndianDataReader.cs" />
+    <Compile Include="DiscUtils\BigEndianDataWriter.cs" />
+    <Compile Include="DiscUtils\Block.cs" />
+    <Compile Include="DiscUtils\BlockCache.cs" />
+    <Compile Include="DiscUtils\BlockCacheSettings.cs" />
+    <Compile Include="DiscUtils\BlockCacheStatistics.cs" />
+    <Compile Include="DiscUtils\BlockCacheStream.cs" />
+    <Compile Include="DiscUtils\Buffer.cs" />
+    <Compile Include="DiscUtils\BufferStream.cs" />
+    <Compile Include="DiscUtils\BuilderBufferExtent.cs" />
+    <Compile Include="DiscUtils\BuilderBufferExtentSource.cs" />
+    <Compile Include="DiscUtils\BuilderExtent.cs" />
+    <Compile Include="DiscUtils\BuilderExtentSource.cs" />
+    <Compile Include="DiscUtils\BuilderSparseStreamExtent.cs" />
+    <Compile Include="DiscUtils\BuilderStreamExtent.cs" />
+    <Compile Include="DiscUtils\BuilderStreamExtentSource.cs" />
+    <Compile Include="DiscUtils\BuiltStream.cs" />
+    <Compile Include="DiscUtils\ChsAddress.cs" />
+    <Compile Include="DiscUtils\BuilderBytesExtent.cs" />
+    <Compile Include="DiscUtils\CircularStream.cs" />
+    <Compile Include="DiscUtils\Crc32.cs" />
+    <Compile Include="DiscUtils\Crc32BigEndian.cs" />
+    <Compile Include="DiscUtils\Crc32Algorithm.cs" />
+    <Compile Include="DiscUtils\Crc32LittleEndian.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GDHighDensityArea.cs" />
+    <Compile Include="GDPrimaryVolumeDescriptor.cs" />
+    <Compile Include="GDSingleDensityArea.cs" />
+    <Compile Include="GDTrack.cs" />
+    <Compile Include="GDImageWriteHelper.cs" />
+    <Compile Include="GDBuilder.cs" />
+    <Compile Include="DiscUtils\GlobalSuppressions.cs" />
+    <Compile Include="DiscUtils\Iso9660\RockRidge\ChildLinkSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\ClusterMap.cs" />
+    <Compile Include="DiscUtils\ConcatStream.cs" />
+    <Compile Include="DiscUtils\DataReader.cs" />
+    <Compile Include="DiscUtils\DataWriter.cs" />
+    <Compile Include="DiscUtils\DiscDirectoryInfo.cs" />
+    <Compile Include="DiscUtils\DiscFileInfo.cs" />
+    <Compile Include="DiscUtils\DiscFileLocator.cs" />
+    <Compile Include="DiscUtils\DiscFileSystem.cs" />
+    <Compile Include="DiscUtils\DiscFileSystemChecker.cs" />
+    <Compile Include="DiscUtils\DiscFileSystemInfo.cs" />
+    <Compile Include="DiscUtils\DiscFileSystemOptions.cs" />
+    <Compile Include="DiscUtils\DiskImageBuilder.cs" />
+    <Compile Include="DiscUtils\DiskImageFileSpecification.cs" />
+    <Compile Include="DiscUtils\FileLocator.cs" />
+    <Compile Include="DiscUtils\FileSystemInfo.cs" />
+    <Compile Include="DiscUtils\FileSystemParameters.cs" />
+    <Compile Include="DiscUtils\FloppyDiskType.cs" />
+    <Compile Include="DiscUtils\GenericDiskAdapterType.cs" />
+    <Compile Include="DiscUtils\Geometry.cs" />
+    <Compile Include="DiscUtils\GeometryTranslation.cs" />
+    <Compile Include="DiscUtils\IBuffer.cs" />
+    <Compile Include="DiscUtils\IByteArraySerializable.cs" />
+    <Compile Include="DiscUtils\IClusterBasedFileSystem.cs" />
+    <Compile Include="DiscUtils\IDiagnosticTraceable.cs" />
+    <Compile Include="DiscUtils\IFileSystem.cs" />
+    <Compile Include="DiscUtils\IMappedBuffer.cs" />
+    <Compile Include="DiscUtils\InvalidFileSystemException.cs" />
+    <Compile Include="DiscUtils\Iso9660\BaseVolumeDescriptor.cs" />
+    <Compile Include="DiscUtils\Iso9660\BootDeviceEmulation.cs" />
+    <Compile Include="DiscUtils\Iso9660\BootInitialEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\BootValidationEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\BootVolumeDescriptor.cs" />
+    <Compile Include="DiscUtils\Iso9660\BootVolumeDescriptorRegion.cs" />
+    <Compile Include="DiscUtils\Iso9660\BuildDirectoryInfo.cs" />
+    <Compile Include="DiscUtils\Iso9660\BuildDirectoryMember.cs" />
+    <Compile Include="DiscUtils\Iso9660\BuildFileInfo.cs" />
+    <Compile Include="DiscUtils\Iso9660\BuildParameters.cs" />
+    <Compile Include="DiscUtils\Iso9660\CDBuilder.cs" />
+    <Compile Include="DiscUtils\Iso9660\RockRidge\FileTimeSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\ExtensionSelectSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\ExtensionSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\GenericSuspExtension.cs" />
+    <Compile Include="DiscUtils\Iso9660\Iso9660Variant.cs" />
+    <Compile Include="DiscUtils\Iso9660\RockRidge\PosixFileInfoSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\RockRidge\PosixNameSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\PrimaryVolumeDescriptorRegion.cs" />
+    <Compile Include="DiscUtils\Iso9660\RockRidge\RockRidgeExtension.cs" />
+    <Compile Include="DiscUtils\Iso9660\SupplementaryVolumeDescriptorRegion.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\GenericSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\PaddingSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\SharingProtocolSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\SuspExtension.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\ContinuationSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\SystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\Susp\TerminatorSystemUseEntry.cs" />
+    <Compile Include="DiscUtils\Iso9660\CommonVolumeDescriptor.cs" />
+    <Compile Include="DiscUtils\Iso9660\DirectoryExtent.cs" />
+    <Compile Include="DiscUtils\Iso9660\DirectoryRecord.cs" />
+    <Compile Include="DiscUtils\Iso9660\ExtentStream.cs" />
+    <Compile Include="DiscUtils\Iso9660\FileExtent.cs" />
+    <Compile Include="DiscUtils\Iso9660\IsoUtilities.cs" />
+    <Compile Include="DiscUtils\Iso9660\PathTable.cs" />
+    <Compile Include="DiscUtils\Iso9660\PathTableRecord.cs" />
+    <Compile Include="DiscUtils\Iso9660\PrimaryVolumeDescriptor.cs" />
+    <Compile Include="DiscUtils\Iso9660\SupplementaryVolumeDescriptor.cs" />
+    <Compile Include="DiscUtils\Iso9660\VolumeDescriptorRegion.cs" />
+    <Compile Include="DiscUtils\Iso9660\VolumeDescriptorSetTerminator.cs" />
+    <Compile Include="DiscUtils\Iso9660\VolumeDescriptorSetTerminatorRegion.cs" />
+    <Compile Include="DiscUtils\IUnixFileSystem.cs" />
+    <Compile Include="DiscUtils\IWindowsFileSystem.cs" />
+    <Compile Include="DiscUtils\LittleEndianDataReader.cs" />
+    <Compile Include="DiscUtils\LocalFileLocator.cs" />
+    <Compile Include="DiscUtils\LogicalVolumeFactory.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\LogicalVolumeFactoryAttribute.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\LogicalVolumeInfo.cs" />
+    <Compile Include="DiscUtils\MirrorStream.cs" />
+    <Compile Include="DiscUtils\NativeFileSystem.cs" />
+    <Compile Include="DiscUtils\ObjectCache.cs" />
+    <Compile Include="DiscUtils\Numbers.cs" />
+    <Compile Include="DiscUtils\Ownership.cs" />
+    <Compile Include="DiscUtils\Partitions\BiosExtendedPartitionTable.cs" />
+    <Compile Include="DiscUtils\Partitions\BiosPartitionedDiskBuilder.cs" />
+    <Compile Include="DiscUtils\Partitions\BiosPartitionInfo.cs" />
+    <Compile Include="DiscUtils\Partitions\BiosPartitionRecord.cs" />
+    <Compile Include="DiscUtils\Partitions\BiosPartitionTable.cs" />
+    <Compile Include="DiscUtils\Partitions\BiosPartitionTypes.cs" />
+    <Compile Include="DiscUtils\Partitions\DefaultPartitionTableFactory.cs" />
+    <Compile Include="DiscUtils\Partitions\GptEntry.cs" />
+    <Compile Include="DiscUtils\Partitions\GptHeader.cs" />
+    <Compile Include="DiscUtils\Partitions\GuidPartitionInfo.cs" />
+    <Compile Include="DiscUtils\Partitions\GuidPartitionTable.cs" />
+    <Compile Include="DiscUtils\Partitions\GuidPartitionTypes.cs" />
+    <Compile Include="DiscUtils\Partitions\PartitionInfo.cs" />
+    <Compile Include="DiscUtils\Partitions\PartitionTable.cs" />
+    <Compile Include="DiscUtils\Partitions\PartitionTableFactory.cs" />
+    <Compile Include="DiscUtils\Partitions\PartitionTableFactoryAttribute.cs" />
+    <Compile Include="DiscUtils\Partitions\WellKnownPartitionType.cs" />
+    <Compile Include="DiscUtils\PassthroughStreamBuilder.cs" />
+    <Compile Include="DiscUtils\PhysicalVolumeInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\Plist.cs" />
+    <Compile Include="GDImageUtility.cs" />
+    <Compile Include="GDTrackType.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="DiscUtils\PumpProgressEventArgs.cs" />
+    <Compile Include="DiscUtils\Range.cs" />
+    <Compile Include="DiscUtils\Raw\BitReverse.cs" />
+    <Compile Include="DiscUtils\Raw\Disk.cs" />
+    <Compile Include="DiscUtils\Raw\DiskFactory.cs" />
+    <Compile Include="DiscUtils\Raw\DiskImageFile.cs" />
+    <Compile Include="DiscUtils\Raw\ECM.cs" />
+    <Compile Include="DiscUtils\Raw\SectorConversion.cs" />
+    <Compile Include="DiscUtils\ReadOnlyDiscFileSystem.cs" />
+    <Compile Include="DiscUtils\ReparsePoint.cs" />
+    <Compile Include="DiscUtils\Sizes.cs" />
+    <Compile Include="DiscUtils\SnapshotStream.cs" />
+    <Compile Include="DiscUtils\SparseMemoryBuffer.cs" />
+    <Compile Include="DiscUtils\SparseMemoryStream.cs" />
+    <Compile Include="DiscUtils\SparseStream.cs" />
+    <Compile Include="DiscUtils\StreamPump.cs" />
+    <Compile Include="DiscUtils\StreamBuffer.cs" />
+    <Compile Include="DiscUtils\StreamBuilder.cs" />
+    <Compile Include="DiscUtils\StreamExtent.cs" />
+    <Compile Include="DiscUtils\StripedStream.cs" />
+    <Compile Include="DiscUtils\SubBuffer.cs" />
+    <Compile Include="DiscUtils\SubStream.cs" />
+    <Compile Include="DiscUtils\ThreadSafeStream.cs" />
+    <Compile Include="DiscUtils\Tuple.cs" />
+    <Compile Include="DiscUtils\Tuple_2.cs" />
+    <Compile Include="DiscUtils\Tuple_3.cs" />
+    <Compile Include="DiscUtils\UnixFilePermissions.cs" />
+    <Compile Include="DiscUtils\UnixFileSystemInfo.cs" />
+    <Compile Include="DiscUtils\UnixFileType.cs" />
+    <Compile Include="DiscUtils\Utilities.cs" />
+    <Compile Include="DiscUtils\MappedStream.cs" />
+    <Compile Include="DiscUtils\VirtualDisk.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskClass.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskExtent.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskFactory.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskFactoryAttribute.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskLayer.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskParameters.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskTransport.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskTransportAttribute.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VirtualDiskTypeInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\VolumeInfo.cs" />
+    <Compile Include="DiscUtils\VolumeManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DiscUtils\WindowsFileInformation.cs" />
+    <Compile Include="DiscUtils\WrappingMappedStream.cs" />
+    <Compile Include="DiscUtils\WrappingStream.cs" />
+    <Compile Include="DiscUtils\ZeroStream.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDictionary Include="DiscUtils\CustomDictionary.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(ProgramFiles)\MSBuild\Microsoft\StyleCop\v4.4\Microsoft.StyleCop.targets" Condition="Exists('$(ProgramFiles)\MSBuild\Microsoft\StyleCop\v4.4\Microsoft.StyleCop.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

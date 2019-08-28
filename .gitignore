@@ -181,6 +181,8 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
-/GDIbuilder/DiscUtils/DiscUtils.dll.xml
+GDImageBuilder.dll.xml
 
+# Microsoft IDE
 *.userprefs
+.vs

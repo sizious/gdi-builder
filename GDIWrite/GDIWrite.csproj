@@ -8,8 +8,8 @@
     <ProjectGuid>{50639B74-0DA3-4BF3-AA79-AFF0B953B1C3}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>buildgdi</RootNamespace>
-    <AssemblyName>buildgdi</AssemblyName>
+    <RootNamespace>GDIWrite</RootNamespace>
+    <AssemblyName>gdiwrite</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -68,9 +68,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GDIbuilder\DiscUtils\DiscUtils.csproj">
-      <Project>{DBB340F9-2386-43C2-A473-FA496CBE07A4}</Project>
-      <Name>DiscUtils</Name>
+    <ProjectReference Include="..\GDImageBuilder\GDImageBuilder.csproj">
+      <Project>{dbb340f9-2386-43c2-a473-fa496cbe07a4}</Project>
+      <Name>GDImageBuilder</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,68 +1,89 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using DiscUtils.Gdrom;
 using System.IO;
 
-namespace buildgdi
+using GDImageBuilder;
+
+namespace GDIWrite
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
-            if (args.Length < 3)
+            /*if (args.Length < 3)
             {
                 PrintUsage();
                 return;
-            }
-            string data = GetSoloArgument("-data", args);
-            string ipBin = GetSoloArgument("-ip", args);
-            List<string> outPath = GetMultiArgument("-output", args);
-            List<string> cdda = GetMultiArgument("-cdda", args);
-            string gdiPath = GetSoloArgument("-gdi", args);
+            }*/
+
+            string sdaData = @"C:\Temp\SDA\";
+            string ip0000 = @"C:\Temp\IP0000.BIN";
+            string track02 = @"C:\Temp\_out\track02.raw";
+
+            string data = @"C:\Temp\HDA\"; // GetSoloArgument("-data", args);
+            string ipBin = @"C:\Temp\IP.BIN"; // GetSoloArgument("-ip", args);
+            List<string> outPath = new List<string>(); outPath.Add(@"C:\Temp\_out\"); //GetMultiArgument("-output", args);
+            List<string> cdda = new List<string>(); cdda.Add(@"C:\Temp\_out\track04.raw"); // GetMultiArgument("-cdda", args);
+            string gdiPath = @"C:\Temp\_out\disc.gdi"; // GetSoloArgument("-gdi", args);
             string volume = GetSoloArgument("-V", args);
-            bool truncate = HasArgument("-truncate", args);
+            bool truncate = false; // HasArgument("-truncate", args);
             bool fileOutput = false;
-            if (CheckArguments(data, ipBin, outPath, cdda, truncate, out fileOutput) == false)
+
+            if (!CheckArguments(data, ipBin, outPath, cdda, truncate, out fileOutput))
             {
                 return;
             }
-            GDromBuilder builder = new GDromBuilder();
-            builder.ReportProgress += ProgressReport;
-            builder.RawMode = HasArgument("-raw", args);
-            builder.TruncateData = truncate;
+
+            GDBuilder builder = new GDBuilder()
+            {
+                OutputDirectory = outPath[0],
+                RawMode = false, // HasArgument("-raw", args),
+                TruncateData = truncate
+            };
+            builder.ReportProgress += ConsoleProgressReport;
+
+            // SDA            
+            builder.SingleDensityArea.BootstrapFilePath = ip0000;
+            builder.SingleDensityArea.SourceDataDirectory = sdaData;
+            builder.SingleDensityArea.AudioTrackFileName = track02;
+
+            // HDA
+            builder.HighDensityArea.BootstrapFilePath = ipBin;
+            builder.HighDensityArea.SourceDataDirectory = data;
+            builder.HighDensityArea.AudioTrackFileNames.AddRange(cdda);
+
             if (volume != null)
             {
-                builder.VolumeIdentifier = volume;
+                builder.PrimaryVolumeDescriptor.VolumeIdentifier = volume;
             }
+
             Console.Write("Writing");
-            List<DiscTrack> tracks = null;
-            if (fileOutput)
+            List<GDTrack> tracks = null;
+
+            /*if (fileOutput)
             {
-                builder.Track03Path = Path.GetFullPath(outPath[0]);
+                builder.SingleDensityArea.DataTrackPath = Path.GetFullPath(outPath[0]) + "01";
+                builder.HighDensityArea.DataTrackFirstPath = Path.GetFullPath(outPath[0]);
                 if (outPath.Count == 2 && (cdda.Count > 0 || builder.TruncateData))
                 {
-                    builder.LastTrackPath = Path.GetFullPath(outPath[1]);
+                    builder.HighDensityAreaDataTrackLastPath = Path.GetFullPath(outPath[1]);
                 }
                 tracks = builder.BuildGDROM(data, ipBin, cdda);
             }
             else
             {
                 tracks = builder.BuildGDROM(data, ipBin, cdda, outPath[0]);
-            }
-            Console.WriteLine(" Done!");
-            if (gdiPath != null)
-            {
-                builder.UpdateGdiFile(tracks, gdiPath);
-            }
-            else
-            {
-                Console.WriteLine(builder.GetGDIText(tracks));
-            }
+            }*/
+
+            builder.BuildSingleDensityArea();
+            builder.BuildHighDensityArea();
+
+            builder.WriteImageDescriptor(gdiPath, true);
+
+            Console.WriteLine(" Done!");            
         }
 
-        private static void ProgressReport(int amount)
+        private static void ConsoleProgressReport(int amount)
         {
             if (amount % 10 == 0)
             {
@@ -150,7 +171,7 @@ namespace buildgdi
 
         private static string GetSoloArgument(string argument, string[] args)
         {
-            for (int i = 0; i < args.Length-1; i++)
+            for (int i = 0; i < args.Length - 1; i++)
             {
                 if (args[i].Equals(argument, StringComparison.OrdinalIgnoreCase))
                 {

@@ -8,79 +8,18 @@ namespace MakeGDI
 {
     public class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            /*if (args.Length < 3)
+            WriteHeader();
+            GDBuilder builder = CreateBuilderInstance(args);
+            if (builder != null)
             {
-                PrintUsage();
-                return;
-            }*/
-
-            string sdaData = @"C:\Temp\SDA\";
-            string ip0000 = @"C:\Temp\IP0000.BIN";
-            string track02 = @"C:\Temp\_out\track02.raw";
-
-            string data = @"C:\Temp\HDA\"; // GetSoloArgument("-data", args);
-            string ipBin = @"C:\Temp\IP.BIN"; // GetSoloArgument("-ip", args);
-            List<string> outPath = new List<string>(); outPath.Add(@"C:\Temp\_out\"); //GetMultiArgument("-output", args);
-            List<string> cdda = new List<string>(); cdda.Add(@"C:\Temp\_out\track04.raw"); // GetMultiArgument("-cdda", args);
-            string gdiPath = @"C:\Temp\_out\disc.gdi"; // GetSoloArgument("-gdi", args);
-            string volume = GetSoloArgument("-V", args);
-            bool truncate = false; // HasArgument("-truncate", args);
-            bool fileOutput = false;
-
-            if (!CheckArguments(data, ipBin, outPath, cdda, truncate, out fileOutput))
-            {
-                return;
+                Console.Write("Writing");
+                builder.Execute();
+                Console.WriteLine(" Done!");
+                return 0;
             }
-
-            GDBuilder builder = new GDBuilder()
-            {
-                OutputDirectory = outPath[0],
-                RawMode = false, // HasArgument("-raw", args),
-                TruncateData = truncate
-            };
-            builder.ReportProgress += ConsoleProgressReport;
-
-            // SDA            
-            builder.SingleDensityArea.BootstrapFilePath = ip0000;
-            builder.SingleDensityArea.SourceDataDirectory = sdaData;
-            builder.SingleDensityArea.AudioTrackFileName = track02;
-
-            // HDA
-            builder.HighDensityArea.BootstrapFilePath = ipBin;
-            builder.HighDensityArea.SourceDataDirectory = data;
-            builder.HighDensityArea.AudioTrackFileNames.AddRange(cdda);
-
-            if (volume != null)
-            {
-                builder.PrimaryVolumeDescriptor.VolumeIdentifier = volume;
-            }
-
-            Console.Write("Writing");
-            List<GDTrack> tracks = null;
-
-            /*if (fileOutput)
-            {
-                builder.SingleDensityArea.DataTrackPath = Path.GetFullPath(outPath[0]) + "01";
-                builder.HighDensityArea.DataTrackFirstPath = Path.GetFullPath(outPath[0]);
-                if (outPath.Count == 2 && (cdda.Count > 0 || builder.TruncateData))
-                {
-                    builder.HighDensityAreaDataTrackLastPath = Path.GetFullPath(outPath[1]);
-                }
-                tracks = builder.BuildGDROM(data, ipBin, cdda);
-            }
-            else
-            {
-                tracks = builder.BuildGDROM(data, ipBin, cdda, outPath[0]);
-            }*/
-
-            builder.BuildSingleDensityArea();
-            builder.BuildHighDensityArea();
-
-            builder.WriteImageDescriptor(gdiPath, true);
-
-            Console.WriteLine(" Done!");            
+            return 1;
         }
 
         private static void ConsoleProgressReport(int amount)
@@ -89,130 +28,149 @@ namespace MakeGDI
             {
                 Console.Write('.');
             }
+        }        
+        
+        private static GDBuilder CreateBuilderInstance(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                PrintUsage();
+                return null;
+            }
+
+            // Initialize the GDBuilder
+            GDBuilder builder = new GDBuilder();
+            builder.ReportProgress += ConsoleProgressReport;
+
+            // Handle the output parameter
+            // This one is complex so it deserve a specific method...
+            string parseOutputMessage = ParseOutput(builder, args);            
+            if (!string.IsNullOrEmpty(parseOutputMessage))
+            {
+                Console.Error.WriteLine(parseOutputMessage);
+                return null;
+            }
+
+            builder.ImageDescriptorFileName = CommandLineHelper.GetSoloArgument(args, "o", "gdi");
+            builder.RawMode = CommandLineHelper.HasArgument(args, "r", "raw");
+//            builder.TruncateData = CommandLineHelper.HasArgument(args, "t", "truncate");            
+
+            // Single Density Area
+            builder.SingleDensityArea.BootstrapFilePath = CommandLineHelper.GetSoloArgument(args, "b", "ip-sda"); ;
+            builder.SingleDensityArea.SourceDataDirectory = CommandLineHelper.GetSoloArgument(args, "i", "input-sda");
+            builder.SingleDensityArea.AudioTrackFileName = CommandLineHelper.GetSoloArgument(args, "g", "gdda-sda");
+
+            // High Density Area
+            builder.HighDensityArea.BootstrapFilePath = CommandLineHelper.GetSoloArgument(args, "b", "ip");
+            builder.HighDensityArea.SourceDataDirectory = CommandLineHelper.GetSoloArgument(args, "i", "input");
+            builder.HighDensityArea.AudioTrackFileNames.AddRange(CommandLineHelper.GetMultiArgument(args, "g", "gdda"));
+
+            // Volume Name
+            if (CommandLineHelper.HasArgument(args, "v", "volume-name"))
+            {
+                builder.PrimaryVolumeDescriptor.VolumeIdentifier = CommandLineHelper.GetSoloArgument(args, "v", "volume-name");
+            }
+
+            // Additional PVD
+            builder.PrimaryVolumeDescriptor.ApplicationIdentifier = "GD WORKSHOP COPYRIGHT CROSS PRODUCTS 1998";
+            builder.PrimaryVolumeDescriptor.DataPreparerIdentifier = "CPL GDWORKSHOP VERSION 2_7_0F FIRM WARE VERSION 2_7_0C";
+
+            if (!CheckArguments(builder))
+            {
+                return null;
+            }
+
+            return builder;
         }
 
-        private static bool CheckArguments(string data, string ipBin, List<string> outPath, List<string> cdda, bool truncate, out bool fileOutput)
+        private static string ParseOutput(GDBuilder builder, string[] args)
         {
-            fileOutput = false;
-            if (data == null || ipBin == null || outPath.Count == 0)
+            List<string> output = CommandLineHelper.GetMultiArgument(args, "o", "output");
+            
+            if (output.Count == 0)
             {
-                Console.WriteLine("The required fields have not been provided.");
-                return false;
+                return "No output specified";
             }
-            if (!Directory.Exists(data))
+            if (output.Count > 2)
+            {
+                return "Too many output specified.";
+            }
+            else if (output.Count == 2)
+            {
+                if (!Path.HasExtension(output[0]) || !Path.HasExtension(output[1]))
+                {
+                    return "Output filenames are not valid!";
+                }
+
+                // Two valid files provided: it's a splitted data track (so we should have GDDA)
+                builder.HighDensityArea.DataTrackFirstFileName = output[0];
+                builder.HighDensityArea.DataTrackLastFileName = output[1];
+            }
+            else if (output.Count == 1)
+            {
+                string outputPath = output[0];
+                if (outputPath.EndsWith(Path.DirectorySeparatorChar.ToString()) || !Path.HasExtension(outputPath))
+                {
+                    // It's a directory
+                    builder.OutputDirectory = outputPath;
+                }
+                else
+                {
+                    // It's a file only
+                    builder.HighDensityArea.DataTrackFirstFileName = outputPath;
+                }                
+            }
+
+            return string.Empty;
+        }
+
+        private static bool CheckArguments(GDBuilder builder)
+        {            
+            if (!Directory.Exists(builder.HighDensityArea.SourceDataDirectory))
             {
                 Console.WriteLine("The specified data directory does not exist!");
                 return false;
             }
-            if (!File.Exists(ipBin))
+
+            if (!File.Exists(builder.HighDensityArea.BootstrapFilePath))
             {
                 Console.WriteLine("The specified IP.BIN file does not exist!");
                 return false;
             }
-            foreach (string track in cdda)
+
+            foreach (string track in builder.HighDensityArea.AudioTrackFileNames)
             {
-                if (!File.Exists(track))
+                if (!File.Exists(track) && !File.Exists(Path.Combine(builder.OutputDirectory, track)))
                 {
-                    Console.WriteLine("The CDDA track " + track + " does not exist!");
+                    Console.WriteLine("The GDDA track " + track + " does not exist!");
                     return false;
                 }
             }
-            if (outPath.Count > 2)
+
+            if (builder.HighDensityArea.AudioTrackFileNames.Count > 0 && !string.IsNullOrEmpty(builder.HighDensityArea.DataTrackLastFileName))
             {
-                Console.WriteLine("Too many output paths specified.");
+                Console.WriteLine("Can't output a single track when CDDA is specified.");
                 return false;
             }
-            else if (outPath.Count == 2)
+
+            /*if (truncate && fileOutput)
             {
-                fileOutput = true;
-                if (!Path.HasExtension(outPath[0]) || !Path.HasExtension(outPath[1]))
-                {
-                    Console.WriteLine("Output filenames are not valid!");
-                    return false;
-                }
+                Console.WriteLine("Can't output a single data track in truncated data mode.");
+                Console.WriteLine("Please provide two different output tracks.");
+                return false;
             }
-            else
-            {
-                string path = outPath[0];
-                if (path.EndsWith(Path.DirectorySeparatorChar.ToString()) || !Path.HasExtension(path))
-                {
-                    fileOutput = false;
-                }
-                else
-                {
-                    fileOutput = true;
-                }
-                if (truncate && fileOutput)
-                {
-                    Console.WriteLine("Can't output a single data track in truncated data mode.");
-                    Console.WriteLine("Please provide two different output tracks.");
-                    return false;
-                }
-                if (cdda.Count > 0 && fileOutput)
-                {
-                    Console.WriteLine("Can't output a single track when CDDA is specified.");
-                    return false;
-                }
-            }
+            */
+
             return true;
         }
 
-        private static bool HasArgument(string argument, string[] args)
+        private static void WriteHeader()
         {
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i].Equals(argument, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static string GetSoloArgument(string argument, string[] args)
-        {
-            for (int i = 0; i < args.Length - 1; i++)
-            {
-                if (args[i].Equals(argument, StringComparison.OrdinalIgnoreCase))
-                {
-                    return args[i + 1];
-                }
-            }
-            return null;
-        }
-
-        private static List<string> GetMultiArgument(string argument, string[] args)
-        {
-            List<string> retval = new List<string>();
-            int start = -1;
-            for (int i = 0; i < args.Length - 1; i++)
-            {
-                if (args[i].Equals(argument, StringComparison.OrdinalIgnoreCase))
-                {
-                    start = i + 1;
-                    break;
-                }
-            }
-            if (start > 0)
-            {
-                for (int i = start; i < args.Length; i++)
-                {
-                    if (args[i].StartsWith("-"))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        retval.Add(args[i]);
-                    }
-                }
-            }
-            return retval;
+            Console.WriteLine("BuildGDI - Command line GDIBuilder");
         }
 
         private static void PrintUsage()
-        {
-            Console.WriteLine("BuildGDI - Command line GDIBuilder");
+        {            
             Console.WriteLine("Usage: buildgdi -data dataFolder -ip IP.BIN -cdda track04.raw track05.raw -output folder -gdi disc.gdi");
             Console.WriteLine();
             Console.WriteLine("Arguments:");

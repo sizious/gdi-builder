@@ -32,7 +32,9 @@ namespace GDImageBuilder
         private int _lastProgress;
 
         private readonly List<GDTrack> _singleDensityAreaTracks;
-        private readonly List<GDTrack> _highDensityAreaTracks;        
+        private readonly List<GDTrack> _highDensityAreaTracks;
+
+        private string _gdImageDescriptorPath;
 
         private string _singleDensityAreaDataTrackPath;
         private string _singleDensityAreaAudioTrackPath;
@@ -45,36 +47,58 @@ namespace GDImageBuilder
 
         #endregion
 
+        #region Public Methods
+
         public GDBuilder()
         {
             _singleDensityAreaTracks = new List<GDTrack>();
             _highDensityAreaTracks = new List<GDTrack>();
             _gddaTrackPaths = new List<string>();
-            PrimaryVolumeDescriptor = new GDPrimaryVolumeDescriptor();
-            SingleDensityArea = new GDSingleDensityArea();
-            HighDensityArea = new GDHighDensityArea();            
+            PrimaryVolumeDescriptor = new GDPrimaryVolumeDescriptor(this);
+            SingleDensityArea = new GDSingleDensityArea(this);
+            HighDensityArea = new GDHighDensityArea(this);
+            Mode = GDBuilderMode.Everything;
         }
 
-        private CDBuilder NewCDBuilderInstance(uint startLba, uint endLba)
+        public List<string> GetFilesToCheck(bool includeSingleDensityArea)
         {
-            return new CDBuilder()
+            List<string> filesToCheck = new List<string>();
+
+            // SDA
+            if (includeSingleDensityArea)
             {
-                VolumeIdentifier = PrimaryVolumeDescriptor.VolumeIdentifier,
-                SystemIdentifier = PrimaryVolumeDescriptor.SystemIdentifier,
-                VolumeSetIdentifier = PrimaryVolumeDescriptor.VolumeSetIdentifier,
-                PublisherIdentifier = PrimaryVolumeDescriptor.PublisherIdentifier,
-                DataPreparerIdentifier = PrimaryVolumeDescriptor.DataPreparerIdentifier,
-                ApplicationIdentifier = PrimaryVolumeDescriptor.ApplicationIdentifier,
-                UseJoliet = false, // A stupid default, mkisofs won't do this by default.
-                LBAoffset = startLba,
-                EndSector = endLba
-            };
+                InitializeSingleDensityArea(true);
+                filesToCheck.Add(_singleDensityAreaDataTrackPath);
+            }
+
+            // HDA
+            InitializeHighDensityArea(true);
+            filesToCheck.Add(_highDensityAreaDataTrackFirstPath);
+            if (!string.IsNullOrEmpty(_highDensityAreaDataTrackLastPath))
+            {
+                filesToCheck.Add(_highDensityAreaDataTrackLastPath);
+            }
+
+            return filesToCheck;
         }
 
-        public void BuildSingleDensityArea()
+        public void Execute()
         {
-            InitializeSingleDensityArea();
+            Initialize();
+            if (Mode == GDBuilderMode.Everything)
+            {
+                BuildSingleDensityArea();
+            }
+            BuildHighDensityArea();
+            WriteImageDescriptor();
+        }
 
+        #endregion
+
+        #region Tracks Management
+
+        private void BuildSingleDensityArea()
+        {
             CDBuilder builder = NewCDBuilderInstance(SINGLE_DENSITY_AREA_LBA_START, SINGLE_DENSITY_AREA_LBA_END);
 
             byte[] ip0000Data = GDImageUtility.LoadBootstrapInMemory(SingleDensityArea.BootstrapFilePath);
@@ -98,10 +122,8 @@ namespace GDImageBuilder
             }   
         }
 
-        public void BuildHighDensityArea()
+        private void BuildHighDensityArea()
         {
-            InitializeHighDensityArea();
-
             CDBuilder builder = NewCDBuilderInstance(HIGH_DENSITY_AREA_LBA_START, HIGH_DENSITY_AREA_LBA_END);
 
             byte[] ipbinData = GDImageUtility.LoadBootstrapInMemory(HighDensityArea.BootstrapFilePath);
@@ -119,6 +141,30 @@ namespace GDImageBuilder
                 _lastProgress = 0;
                 WriteDataTrack(false, isoStream, ipbinData, _highDensityAreaTracks);                
             }
+        }
+
+        private List<GDTrack> ReadCDDA(List<string> gdda)
+        {
+            List<GDTrack> retval = new List<GDTrack>();
+            foreach (string path in gdda)
+            {
+                FileInfo fi = new FileInfo(path);
+                if (!fi.Exists)
+                {
+                    throw new FileNotFoundException("GDDA track " + fi.Name + " could not be accessed.");
+                }
+
+                GDTrack track = new GDTrack
+                {
+                    FileName = fi.Name,
+                    Type = 0,
+                    FileSize = fi.Length
+                };
+
+                retval.Add(track);
+            }
+
+            return retval;
         }
 
         private void WriteDataTrack(bool isSingleDensityArea, BuiltStream isoStream, byte[] bootstrapData, List<GDTrack> tracks)
@@ -166,7 +212,7 @@ namespace GDImageBuilder
                 int singleDensityAreaAudioTrackSectorsSize = (int)(GDImageUtility.RoundUp(singleDensityAreaAudioTrackFileSize, RAW_SECTOR_SIZE) / RAW_SECTOR_SIZE);
 
                 // So the SDA data track will fill this space...
-                trackEnd = SINGLE_DENSITY_AREA_LBA_END - singleDensityAreaAudioTrackSectorsSize;
+                trackEnd = SINGLE_DENSITY_AREA_LBA_END - singleDensityAreaAudioTrackSectorsSize - TRACK_GAP_SECTOR_COUNT; /* FIXME */
 
                 // Updating the SDA audio track in consequence
                 tracks[0].LBA = (uint)trackEnd + TRACK_GAP_SECTOR_COUNT;
@@ -288,97 +334,6 @@ namespace GDImageBuilder
             return trackEnd;
         }
 
-        private int NotifyProgress(long currentBytes, long totalBytes, int skip)
-        {
-            skip++;
-            if (skip >= 10)
-            {
-                skip = 0;
-                int percent = (int)((currentBytes * 100) / totalBytes);
-                if (percent > _lastProgress)
-                {
-                    _lastProgress = percent;
-                    ReportProgress?.Invoke(_lastProgress);
-                }
-            }
-            return skip;
-        }
-
-        public string CheckOutputExists(List<string> cdda, string output)
-        {
-            List<string> filesToCheck = new List<string>();
-            filesToCheck.Add("track03.bin");
-            if (cdda != null && cdda.Count > 0)
-            {
-                filesToCheck.Add(GetLastTrackName(cdda.Count));
-            }
-            StringBuilder sb = new StringBuilder();
-            int fc = 0;
-            foreach (string file in filesToCheck)
-            {
-                if (File.Exists(Path.Combine(output, file)))
-                {
-                    sb.Append(file + ", ");
-                    fc++;
-                }
-            }
-            if (fc >= 2)
-            {
-                return "The files " + sb.ToString(0, sb.Length - 2) + " already exist. They will be overwritten. Are you sure?";
-            }
-            else if (fc == 1)
-            {
-                return "The file " + sb.ToString(0, sb.Length - 2) + " already exists. It will be overwritten. Are you sure?";
-            }
-            return null;
-        }
-
-        private string GenerateImageDescriptor(bool regenerateSingleDensityAreaDescriptor)
-        {
-            StringBuilder sb = new StringBuilder();            
-            int tn = 3;
-
-            if (regenerateSingleDensityAreaDescriptor)
-            {
-                tn = 1;
-                foreach (GDTrack track in _singleDensityAreaTracks)
-                {
-                    sb.Append(track.ToString(tn, RawMode));
-                    tn++;
-                }
-            }
-
-            foreach (GDTrack track in _highDensityAreaTracks)
-            {
-                sb.Append(track.ToString(tn, RawMode));
-                tn++;
-            }
-
-            return sb.ToString();
-        }
-
-        public void WriteImageDescriptor(string gdiPath, bool regenerateSingleDensityAreaDescriptor)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            // 2 is for SDA tracks (always 2, even if we don't have regenerated SDA)
-            sb.AppendLine((2 + _highDensityAreaTracks.Count).ToString());
-
-            // Extract SDA from existing GDI if necessary
-            if (File.Exists(gdiPath))
-            {
-                string[] file = File.ReadAllLines(gdiPath);
-                if (!regenerateSingleDensityAreaDescriptor && (file.Length > 2))
-                {
-                    sb.AppendLine(file[1]); // SDA: track01
-                    sb.AppendLine(file[2]); // SDA: track02
-                }
-            }
-
-            sb.Append(GenerateImageDescriptor(regenerateSingleDensityAreaDescriptor));
-            File.WriteAllText(gdiPath, sb.ToString());
-        }
-
         private void PopulateFromDirectory(CDBuilder builder, DirectoryInfo di, string basePath, string bootBin, uint endLba)
         {
             FileInfo bootBinFile = null;
@@ -416,75 +371,185 @@ namespace GDImageBuilder
             }
         }
 
-        private string GetLastTrackName(int cddaTracks)
+        private int NotifyProgress(long currentBytes, long totalBytes, int skip)
         {
-            string result = "track" + (cddaTracks + 4).ToString("00") + ".bin";
-            return (cddaTracks > 0) ? result : string.Empty;
+            skip++;
+            if (skip >= 10)
+            {
+                skip = 0;
+                int percent = (int)((currentBytes * 100) / totalBytes);
+                if (percent > _lastProgress)
+                {
+                    _lastProgress = percent;
+                    ReportProgress?.Invoke(_lastProgress);
+                }
+            }
+            return skip;
         }
 
-        private void InitializeSingleDensityArea()
-        {            
-            _singleDensityAreaTracks.Clear();
+        #endregion
 
+        #region GD Image Descriptor (*.gdi) Management
+
+        private string GenerateImageDescriptor()
+        {
+            StringBuilder sb = new StringBuilder();            
+            int tn = 3;
+
+            if (Mode.Equals(GDBuilderMode.Everything))
+            {
+                tn = 1;
+                foreach (GDTrack track in _singleDensityAreaTracks)
+                {
+                    sb.Append(track.ToString(tn, RawMode));
+                    tn++;
+                }
+            }
+
+            foreach (GDTrack track in _highDensityAreaTracks)
+            {
+                sb.Append(track.ToString(tn, RawMode));
+                tn++;
+            }
+
+            return sb.ToString();
+        }
+
+        private void WriteImageDescriptor()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // 2 is for SDA tracks (always 2, even if we don't have regenerated SDA)
+            sb.AppendLine((2 + _highDensityAreaTracks.Count).ToString());
+
+            // Extract SDA from existing GDI if necessary
+            if (File.Exists(_gdImageDescriptorPath))
+            {
+                string[] file = File.ReadAllLines(_gdImageDescriptorPath);
+                if (!Mode.Equals(GDBuilderMode.Everything) && (file.Length > 2))
+                {
+                    sb.AppendLine(file[1]); // SDA: track01
+                    sb.AppendLine(file[2]); // SDA: track02
+                }
+            }
+
+            sb.Append(GenerateImageDescriptor());
+            File.WriteAllText(_gdImageDescriptorPath, sb.ToString());
+        }
+
+        #endregion        
+
+        #region Engine Initializers
+
+        private void SetDefaultFileNames()
+        {
+            // GDBuilder defaults
+            ImageDescriptorFileName = GDImageUtility.GetDefaultFileName(ImageDescriptorFileName, "disc.gdi");
+
+            // SDA defaults
+            SingleDensityArea.SetDefaultFileNames();
+
+            // HDA defaults
+            HighDensityArea.SetDefaultFileNames();
+        }
+
+        private void Initialize()
+        {
+            // First, ensure to have some defaults filename
+            SetDefaultFileNames();
+
+            // Compute the final GDI filename (can be set by the user or default if the user have set it to empty)
+            _gdImageDescriptorPath = Path.Combine(OutputDirectory, ImageDescriptorFileName);
+
+            // Then initialize SDA if requested
+            if (Mode == GDBuilderMode.Everything)
+            {                
+                InitializeSingleDensityArea(false);
+            }
+
+            // Initialize HDA
+            InitializeHighDensityArea(false);
+        }
+
+        private void InitializeSingleDensityArea(bool initializeOnlyFileNames)
+        {            
             // SDA data track
             _singleDensityAreaDataTrackPath = Path.Combine(OutputDirectory, SingleDensityArea.DataTrackFileName);
 
             // SDA audio track
             _singleDensityAreaAudioTrackPath = Path.Combine(OutputDirectory, SingleDensityArea.AudioTrackFileName);
 
-            // SDA Boot file read from Bootstrap (usually 1ST_READ.BIN)
-            _singleDensityAreaBootstrapFileName = string.Empty;
+            if (!initializeOnlyFileNames)
+            {
+                // Removing all SDA tracks records
+                _singleDensityAreaTracks.Clear();
+
+                // SDA Boot file read from Bootstrap (usually 1ST_READ.BIN)
+                _singleDensityAreaBootstrapFileName = string.Empty;
+            }
         }
 
-        private void InitializeHighDensityArea()
+        private void InitializeHighDensityArea(bool initializeOnlyFileNames)
         {
-            _highDensityAreaTracks.Clear();
-
             // First HDA data track (always required)
             _highDensityAreaDataTrackFirstPath = Path.Combine(OutputDirectory, HighDensityArea.DataTrackFirstFileName);
 
             // Last HDA data track is only when GDDA are detected...
-            string hdaLastDataTrackFileName = GetLastTrackName(HighDensityArea.AudioTrackFileNames.Count);
+            string hdaLastDataTrackFileName = GetLastDataTrackName();
             if (!string.IsNullOrEmpty(HighDensityArea.DataTrackLastFileName))
             {
                 hdaLastDataTrackFileName = HighDensityArea.DataTrackLastFileName;
             }
-            _highDensityAreaDataTrackLastPath = !string.IsNullOrEmpty(hdaLastDataTrackFileName) ? Path.Combine(OutputDirectory, hdaLastDataTrackFileName) : string.Empty;
+            _highDensityAreaDataTrackLastPath = !string.IsNullOrEmpty(hdaLastDataTrackFileName) ? 
+                Path.Combine(OutputDirectory, hdaLastDataTrackFileName) : 
+                string.Empty;            
 
-            // Handle HDA audio tracks
-            _gddaTrackPaths.Clear();
-            foreach (string gddaTrack in HighDensityArea.AudioTrackFileNames)
+            if (!initializeOnlyFileNames)
             {
-                _gddaTrackPaths.Add(Path.Combine(OutputDirectory, gddaTrack));
-            }
+                // Removing all HDA tracks records
+                _highDensityAreaTracks.Clear();
 
-            // HDA Boot file read from Bootstrap (usually 1ST_READ.BIN)
-            _highDensityAreaBootstrapFileName = string.Empty;
-        }
-
-        private List<GDTrack> ReadCDDA(List<string> gdda)
-        {
-            List<GDTrack> retval = new List<GDTrack>();
-            foreach (string path in gdda)
-            {
-                FileInfo fi = new FileInfo(path);
-                if (!fi.Exists)
+                // Handle HDA audio tracks
+                _gddaTrackPaths.Clear();
+                foreach (string gddaTrack in HighDensityArea.AudioTrackFileNames)
                 {
-                    throw new FileNotFoundException("GDDA track " + fi.Name + " could not be accessed.");
+                    _gddaTrackPaths.Add(Path.Combine(OutputDirectory, gddaTrack));
                 }
 
-                GDTrack track = new GDTrack
-                {
-                    FileName = fi.Name,
-                    Type = 0,
-                    FileSize = fi.Length
-                };
-
-                retval.Add(track);
+                // HDA Boot file read from Bootstrap (usually 1ST_READ.BIN)
+                _highDensityAreaBootstrapFileName = string.Empty;
             }
-
-            return retval;
         }
+        
+        private string GetLastDataTrackName()
+        {
+            // If GDDA tracks are present, then we need to split the HDA data track
+            // So the first track will be track03 and the last data track will be dependent to the GDDA
+            int hdaGddaTracksCount = HighDensityArea.AudioTrackFileNames.Count;
+            string result = "track" + (hdaGddaTracksCount + 4).ToString("00")
+                + GDImageUtility.GetDefaultTrackExtension(GDTrackType.Data, RawMode);
+            return (hdaGddaTracksCount > 0) ? result : string.Empty;
+        }
+
+        private CDBuilder NewCDBuilderInstance(uint startLba, uint endLba)
+        {
+            return new CDBuilder()
+            {
+                VolumeIdentifier = PrimaryVolumeDescriptor.VolumeIdentifier,
+                SystemIdentifier = PrimaryVolumeDescriptor.SystemIdentifier,
+                VolumeSetIdentifier = PrimaryVolumeDescriptor.VolumeSetIdentifier,
+                PublisherIdentifier = PrimaryVolumeDescriptor.PublisherIdentifier,
+                DataPreparerIdentifier = PrimaryVolumeDescriptor.DataPreparerIdentifier,
+                ApplicationIdentifier = PrimaryVolumeDescriptor.ApplicationIdentifier,
+                UseJoliet = false, // A stupid default, mkisofs won't do this by default.
+                LBAoffset = startLba,
+                EndSector = endLba
+            };
+        }
+
+        #endregion
+
+        #region Private Properties
 
         private bool HighDensityDataTrackSplitted
         {
@@ -495,13 +560,19 @@ namespace GDImageBuilder
             }
         }
 
+        #endregion
+
         #region Published Properties
+
+        public GDBuilderMode Mode { get; set; }
 
         public GDSingleDensityArea SingleDensityArea { get; private set; }
 
         public GDHighDensityArea HighDensityArea { get; private set; }
 
         public GDPrimaryVolumeDescriptor PrimaryVolumeDescriptor { get; private set; }
+
+        public string ImageDescriptorFileName;
 
         public string OutputDirectory { get; set; }
 

@@ -59,5 +59,34 @@ namespace GDImageBuilder
             // Update track count in bootsector (HDA + SDA tracks count)
             bootstrapData[0x28E] = (byte)(tracks.Count + 2);
         }
+
+        public static string GetDefaultFileName(string fileName, string defaultFileName)
+        { 
+            if (string.IsNullOrEmpty(fileName) || Path.GetFileNameWithoutExtension(fileName).Equals(Path.GetFileNameWithoutExtension(defaultFileName)) )
+            {
+                return defaultFileName;
+            }
+            return fileName;
+        }
+
+        public static string GetDefaultFileName(string fileName, string defaultRadicalFileName, GDTrackType trackType, bool isRawMode)
+        {
+            string defaultFileName = defaultRadicalFileName + GetDefaultTrackExtension(trackType, isRawMode);
+            return GetDefaultFileName(fileName, defaultFileName);
+        }
+
+        public static string GetDefaultTrackExtension(GDTrackType trackType, bool isRawMode)
+        {
+            string result = "bin";
+            if (trackType == GDTrackType.Audio)
+            {
+                result = "raw";
+            }
+            else if (!isRawMode)
+            {
+                result = "iso";
+            }
+            return "." + result;
+        }
     }
 }

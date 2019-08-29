@@ -7,8 +7,9 @@ namespace GDImageBuilder
 {
     public class GDPrimaryVolumeDescriptor
     {
-        public GDPrimaryVolumeDescriptor()
+        public GDPrimaryVolumeDescriptor(GDBuilder owner)
         {
+            Owner = owner;
             VolumeIdentifier = "DREAMCAST";
             SystemIdentifier = string.Empty;
             VolumeSetIdentifier = string.Empty;
@@ -23,5 +24,6 @@ namespace GDImageBuilder
         public string PublisherIdentifier { get; set; }
         public string DataPreparerIdentifier { get; set; }
         public string ApplicationIdentifier { get; set; }
+        public GDBuilder Owner { get; private set; }
     }
 }

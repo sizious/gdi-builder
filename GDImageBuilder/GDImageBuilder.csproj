@@ -108,6 +108,7 @@
     <Compile Include="DiscUtils\Crc32LittleEndian.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="GDBuilderMode.cs" />
     <Compile Include="GDHighDensityArea.cs" />
     <Compile Include="GDPrimaryVolumeDescriptor.cs" />
     <Compile Include="GDSingleDensityArea.cs" />

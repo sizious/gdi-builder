@@ -7,14 +7,21 @@ namespace GDImageBuilder
 {
     public class GDHighDensityArea
     {
-        public GDHighDensityArea()
+        public GDHighDensityArea(GDBuilder owner)
         {
+            Owner = owner;
+
             AudioTrackFileNames = new List<string>();
 
-            DataTrackFirstFileName = "track03.bin";
+            SetDefaultFileNames();
             DataTrackLastFileName = string.Empty;
 
             BootstrapFilePath = string.Empty; // IP.BIN
+        }
+
+        internal void SetDefaultFileNames()
+        {
+            DataTrackFirstFileName = GDImageUtility.GetDefaultFileName(DataTrackFirstFileName, "track03", GDTrackType.Data, Owner.RawMode);
         }
 
         public string SourceDataDirectory { get; set; }
@@ -22,5 +29,6 @@ namespace GDImageBuilder
         public string DataTrackFirstFileName { get; set; }
         public List<string> AudioTrackFileNames { get; private set; }
         public string DataTrackLastFileName { get; set; }
+        public GDBuilder Owner { get; private set; }
     }
 }

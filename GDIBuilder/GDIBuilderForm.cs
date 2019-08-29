@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Threading;
 using GDImageBuilder;
+using System.Text;
+using System.IO;
 
 namespace GDIbuilder
 {
@@ -80,7 +82,7 @@ namespace GDIbuilder
                 {
                     cdTracks.Add(lvi.FilePath);
                 }
-                string checkMsg = _builder.CheckOutputExists(cdTracks, txtOutdir.Text);
+                string checkMsg = CheckOutputExists(cdTracks, txtOutdir.Text);
                 if (checkMsg != null)
                 {
                     if(MessageBox.Show(checkMsg,"Warning",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)==DialogResult.No){
@@ -190,6 +192,30 @@ namespace GDIbuilder
                 _builder.PrimaryVolumeDescriptor.ApplicationIdentifier = adv.ApplicationIdentifier;
                 _builder.TruncateData = adv.TruncateMode;
             }
+        }
+
+        private string CheckOutputExists(List<string> cdda, string output)
+        {
+            List<string> filesToCheck = _builder.GetFilesToCheck(false); /* FIXME */
+            StringBuilder sb = new StringBuilder();
+            int fc = 0;
+            foreach (string file in filesToCheck)
+            {
+                if (File.Exists(file))
+                {
+                    sb.Append(Path.GetFileName(file) + ", ");
+                    fc++;
+                }
+            }
+            if (fc >= 2)
+            {
+                return "The files " + sb.ToString(0, sb.Length - 2) + " already exist. They will be overwritten. Are you sure?";
+            }
+            else if (fc == 1)
+            {
+                return "The file " + sb.ToString(0, sb.Length - 2) + " already exists. It will be overwritten. Are you sure?";
+            }
+            return null;
         }
     }
 
